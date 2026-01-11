@@ -103,6 +103,13 @@ export async function loadPosts(): Promise<{ posts: Post[], lastUpdated: string 
 
     // Merge & Deduplicate
     let allPosts = [...linkedinPosts, ...xPosts];
+
+    if (allPosts.length === 0) {
+        console.warn('[Data] WARNING: No posts fetched from either LinkedIn or X.');
+    } else {
+        console.log(`[Data] Total unfiltered posts: ${allPosts.length}`);
+    }
+
     const uniquePostsMap = new Map();
     const seenContent = new Set<string>();
 
@@ -114,10 +121,13 @@ export async function loadPosts(): Promise<{ posts: Post[], lastUpdated: string 
         }
     }
     const uniquePosts = Array.from(uniquePostsMap.values());
+    console.log(`[Data] Unique posts after dedup: ${uniquePosts.length}`);
 
     // Enrich Analysis
     const enrichedPosts = enrichWithPerformanceAnalysis(uniquePosts);
     const sortedPosts = enrichedPosts.sort((a, b) => (b.performanceScore || 0) - (a.performanceScore || 0));
+
+    console.log(`[Data] Returning ${sortedPosts.length} sorted posts.`);
 
     // 3. Save to Cache (if we got data)
     if (sortedPosts.length > 0) {
