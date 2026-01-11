@@ -24,6 +24,21 @@ export default function OnboardingPage() {
 
     useEffect(() => {
         setMounted(true);
+        const loadProfile = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('selected_categories')
+                    .eq('id', user.id)
+                    .single();
+
+                if (profile?.selected_categories) {
+                    setSelected(profile.selected_categories as Category[]);
+                }
+            }
+        };
+        loadProfile();
     }, []);
 
     const toggleCategory = (cat: Category) => {
