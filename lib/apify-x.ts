@@ -1,5 +1,3 @@
-import fs from 'fs';
-import path from 'path';
 import { ApifyClient } from 'apify-client';
 import { Post, Category } from './types';
 
@@ -7,14 +5,6 @@ import { Post, Category } from './types';
 const client = new ApifyClient({
     token: process.env.APIFY_API_TOKEN || process.env.NEXT_PUBLIC_APIFY_API_TOKEN,
 });
-
-const CACHE_FILE = path.join(process.cwd(), 'apify_x_cache.json');
-const CACHE_TTL = 1000 * 60 * 60 * 24; // 24 hours
-
-interface XCacheData {
-    timestamp: number;
-    posts: Post[];
-}
 
 /**
  * Adapt a raw X post from the Apify actor to our Post interface
@@ -62,22 +52,6 @@ export function adaptXPost(raw: any, category: string): Post {
  */
 export async function fetchXPosts(category: Category): Promise<Post[]> {
     const now = Date.now();
-
-    // 1. Check File Cache
-    try {
-        if (fs.existsSync(CACHE_FILE)) {
-            const raw = await fs.promises.readFile(CACHE_FILE, 'utf8');
-            const cache: Record<string, XCacheData> = JSON.parse(raw);
-            const categoryCache = cache[category];
-
-            if (categoryCache && (now - categoryCache.timestamp < CACHE_TTL)) {
-                console.log(`[X] Returning cached posts for ${category}`);
-                return categoryCache.posts;
-            }
-        }
-    } catch (e) {
-        console.error("[X] Error reading cache:", e);
-    }
 
     try {
         console.log(`[X] Fetching posts for ${category}...`);
@@ -127,25 +101,7 @@ export async function fetchXPosts(category: Category): Promise<Post[]> {
         // Take top 20 (we will filter down to 12 in the unified view, but keep more here for diversity)
         const topPosts = sortedPosts.slice(0, 20);
 
-        // 2. Update File Cache using read-modify-write (simple approach)
-        try {
-            let cache: Record<string, XCacheData> = {};
-            if (fs.existsSync(CACHE_FILE)) {
-                const raw = await fs.promises.readFile(CACHE_FILE, 'utf8');
-                cache = JSON.parse(raw);
-            }
-
-            cache[category] = {
-                timestamp: now,
-                posts: topPosts,
-            };
-
-            await fs.promises.writeFile(CACHE_FILE, JSON.stringify(cache, null, 2));
-            console.log(`[X] Updated cache for ${category}`);
-        } catch (e) {
-            console.error("[X] Failed to update cache:", e);
-        }
-
+        // Return filtered posts directly without local file caching (we use Supabase global cache now)
         return topPosts;
 
     } catch (error) {

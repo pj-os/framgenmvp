@@ -20,6 +20,8 @@ function inferCategory(text: string): Category {
     if (content.includes('design') || content.includes('ui') || content.includes('ux')) return 'Design';
     if (content.includes('productivity') || content.includes('habit') || content.includes('work')) return 'Productivity';
 
+    // Fallback: If no specific keyword matches, try to be more generous or return Business
+    if (content.length > 50) return 'Business';
     return 'Business';
 }
 

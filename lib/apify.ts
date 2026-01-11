@@ -1,11 +1,10 @@
-import fs from 'fs';
-import path from 'path';
 import { ApifyClient } from 'apify-client';
 import { Post, Platform, Category } from './types';
 import { TARGET_PROFILES } from './profiles';
 
-const CACHE_FILE = path.join(process.cwd(), 'apify_cache.json');
-const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+const client = new ApifyClient({
+    token: process.env.APIFY_API_TOKEN,
+});
 
 const client = new ApifyClient({
     token: process.env.APIFY_API_TOKEN,
@@ -24,52 +23,9 @@ function inferCategory(text: string): Category {
     return 'Business';
 }
 
-const REFRESH_COOLDOWN_MS = 4 * 60 * 60 * 1000; // 4 hours
-
-export async function refreshData(force: boolean = false): Promise<{ success: boolean; message: string; posts?: Post[] }> {
-    try {
-        if (fs.existsSync(CACHE_FILE) && !force) {
-            const cacheRaw = await fs.promises.readFile(CACHE_FILE, 'utf8');
-            const cacheData = JSON.parse(cacheRaw);
-            const now = Date.now();
-            const timeSinceLastFetch = now - cacheData.timestamp;
-
-            if (timeSinceLastFetch < REFRESH_COOLDOWN_MS) {
-                const hoursRemaining = ((REFRESH_COOLDOWN_MS - timeSinceLastFetch) / (1000 * 60 * 60)).toFixed(1);
-                return {
-                    success: false,
-                    message: `Data is fresh. You can refresh again in ${hoursRemaining} hours.`
-                };
-            }
-        }
-
-        const posts = await fetchNetworkPosts();
-        return { success: true, message: "Data refreshed successfully", posts };
-    } catch (error) {
-        console.error("Refresh failed:", error);
-        return { success: false, message: "Failed to refresh data" };
-    }
-}
+// refreshData removed as it relied on local FS cache. Use global refresh via API/Cache expiry.
 
 export async function fetchPostsFromApify(): Promise<Post[]> {
-    // 1. Check Cache
-    try {
-        if (fs.existsSync(CACHE_FILE)) {
-            const cacheRaw = await fs.promises.readFile(CACHE_FILE, 'utf8');
-            const cacheData = JSON.parse(cacheRaw);
-            const now = Date.now();
-
-            if (now - cacheData.timestamp < CACHE_DURATION_MS) {
-                console.log("Serving posts from local cache");
-                return cacheData.posts;
-            } else {
-                console.log("Cache expired, fetching fresh data...");
-            }
-        }
-    } catch (e) {
-        console.error("Cache read failed, skipping", e);
-    }
-
     return fetchNetworkPosts();
 }
 
@@ -121,17 +77,6 @@ async function fetchNetworkPosts(): Promise<Post[]> {
                 category: inferCategory(text)
             };
         });
-
-        // Write to Cache
-        try {
-            await fs.promises.writeFile(CACHE_FILE, JSON.stringify({
-                timestamp: Date.now(),
-                posts: posts
-            }, null, 2));
-            console.log("Saved fresh data to cache");
-        } catch (e) {
-            console.error("Failed to write cache", e);
-        }
 
         return posts;
 
