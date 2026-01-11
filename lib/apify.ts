@@ -6,9 +6,7 @@ const client = new ApifyClient({
     token: process.env.APIFY_API_TOKEN,
 });
 
-const client = new ApifyClient({
-    token: process.env.APIFY_API_TOKEN,
-});
+
 
 // Helper to infer category (reused logic, ideally shared but keeping simple)
 function inferCategory(text: string): Category {
@@ -90,60 +88,24 @@ async function fetchNetworkPosts(): Promise<Post[]> {
 // Profile Fetching Logic (New)
 // ------------------------------------------------------------------
 
-const PROFILE_CACHE_FILE = path.join(process.cwd(), 'apify_profiles_cache.json');
-const PROFILE_CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours (Same TTL)
-
-interface ProfileData {
-    url: string;
-    followers: number;
-    fetchedAt: number;
-}
-
 export async function fetchProfiles(profileUrls: string[]): Promise<Record<string, number>> {
     const cleanedUrls = [...new Set(profileUrls.map(url => url.replace(/\/recent-activity\/all\/?$/, '')))];
     const followersMap: Record<string, number> = {};
-    const urlsToFetch: string[] = [];
 
-    // 1. Load Cache
-    let cachedData: Record<string, ProfileData> = {};
-    if (fs.existsSync(PROFILE_CACHE_FILE)) {
-        try {
-            const raw = await fs.promises.readFile(PROFILE_CACHE_FILE, 'utf8');
-            cachedData = JSON.parse(raw);
-        } catch (e) {
-            console.error("Failed to load profile cache", e);
-        }
-    }
+    // We strictly fetch fresh data now as we rely on the parent's (loadPosts) 3-hour cache.
+    // This avoids FS usage and ensures data simplicity.
 
-    const now = Date.now();
-
-    // 2. Check Cache
-    for (const url of cleanedUrls) {
-        const cached = cachedData[url];
-        if (cached && (now - cached.fetchedAt < PROFILE_CACHE_DURATION_MS)) {
-            followersMap[url] = cached.followers;
-        } else {
-            urlsToFetch.push(url);
-        }
-    }
-
-    if (urlsToFetch.length === 0) {
-        console.log("All profiles served from cache.");
-        return followersMap;
-    }
-
-    // 3. Fetch missing profiles
     if (!process.env.APIFY_API_TOKEN) {
         console.error("APIFY_API_TOKEN missing, cannot fetch profiles.");
         return followersMap;
     }
 
     try {
-        console.log(`Fetching ${urlsToFetch.length} profiles from Apify...`);
+        console.log(`Fetching ${cleanedUrls.length} profiles from Apify...`);
 
         // Actor: 2SyF0bVxmgGr8IVCZ input schema: { "profileUrls": [ "url1", "url2" ] }
         const run = await client.actor("2SyF0bVxmgGr8IVCZ").call({
-            profileUrls: urlsToFetch
+            profileUrls: cleanedUrls
         });
 
         const { items } = await client.dataset(run.defaultDatasetId).listItems();
@@ -160,25 +122,15 @@ export async function fetchProfiles(profileUrls: string[]): Promise<Record<strin
                 // We need to map it back to our requested URLs
                 // Simple matching attempts
                 const publicId = item.publicIdentifier || item.public_identifier;
-                const inputUrl = urlsToFetch.find(u => itemUrl.includes(u) || u.includes(itemUrl) || (publicId && u.includes(publicId)));
+                const inputUrl = cleanedUrls.find(u => itemUrl.includes(u) || u.includes(itemUrl) || (publicId && u.includes(publicId)));
 
                 if (inputUrl) {
                     let flw = followers;
                     if (typeof flw === 'string') flw = parseInt(flw.replace(/,/g, ''), 10);
-
                     followersMap[inputUrl] = flw;
-                    cachedData[inputUrl] = {
-                        url: inputUrl,
-                        followers: flw,
-                        fetchedAt: now
-                    };
                 }
             }
         }
-
-        // 4. Save Cache
-        await fs.promises.writeFile(PROFILE_CACHE_FILE, JSON.stringify(cachedData, null, 2));
-        console.log("Updated profile cache.");
 
     } catch (error) {
         console.error("Profile batch fetch failed:", error);
