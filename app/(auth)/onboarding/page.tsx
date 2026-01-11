@@ -62,9 +62,13 @@ export default function OnboardingPage() {
 
             router.push('/dashboard');
             router.refresh(); // Refresh to update server components checking auth/profile
-        } catch (error) {
-            console.error('Onboarding error:', error);
-            toast({ title: "Error saving preferences", description: "Please try again", variant: "destructive" });
+        } catch (error: any) {
+            console.error('Onboarding error full object:', error);
+            toast({
+                title: "Error saving preferences",
+                description: error.message || "Please try again",
+                variant: "destructive"
+            });
         } finally {
             setLoading(false);
         }
