@@ -28,6 +28,7 @@ export default function Dashboard() {
     const [posts, setPosts] = useState<Post[]>([]);
     const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
     const [loading, setLoading] = useState(true);
+    const [lastUpdated, setLastUpdated] = useState<string | null>(null);
     const [userCategories, setUserCategories] = useState<Category[]>([]);
     const [selectedPlatform, setSelectedPlatform] = useState<Platform | 'All'>('All');
 
@@ -59,8 +60,17 @@ export default function Dashboard() {
             // 2. Fetch posts
             try {
                 const res = await fetch('/api/posts');
-                const data: Post[] = await res.json();
-                setPosts(data);
+                const data = await res.json();
+
+                // Handle new response format { posts, lastUpdated }
+                if (data.posts) {
+                    setPosts(data.posts);
+                    setLastUpdated(data.lastUpdated);
+                } else if (Array.isArray(data)) {
+                    // Fallback for array response if API hasn't updated in build
+                    setPosts(data);
+                }
+
                 setLoading(false);
             } catch (err) {
                 console.error(err);
@@ -126,6 +136,12 @@ export default function Dashboard() {
                             <h1 className="text-3xl font-bold tracking-tight">Trending Now</h1>
                             <RefreshButton />
                         </div>
+                        {lastUpdated && (
+                            <p className="text-xs text-muted-foreground w-full">
+                                Last updated: {new Date(lastUpdated).toLocaleString()}
+                            </p>
+                        )}
+                    </div>
 
                         <div className="flex items-center gap-4">
                             <DropdownMenu>
@@ -181,7 +197,7 @@ export default function Dashboard() {
                         </div>
                     )}
                 </section>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }
