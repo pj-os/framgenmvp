@@ -59,8 +59,9 @@ function CreatePageContent() {
         if (sourceId) {
             fetch('/api/posts')
                 .then(res => res.json())
-                .then((data: Post[]) => {
-                    const found = data.find(p => p.id === sourceId);
+                .then((data: any) => {
+                    const posts = data.posts || (Array.isArray(data) ? data : []);
+                    const found = posts.find((p: Post) => p.id === sourceId);
                     if (found) {
                         setSourcePost(found);
                         // Auto analyze
