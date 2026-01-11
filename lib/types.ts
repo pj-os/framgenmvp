@@ -41,3 +41,12 @@ export interface UserState {
     selectedCategories: Category[];
     bookmarkedPosts: string[];
 }
+
+export interface Profile {
+    id: string;
+    email: string;
+    full_name?: string;
+    avatar_url?: string;
+    has_onboarded: boolean;
+    selected_categories: Category[];
+}

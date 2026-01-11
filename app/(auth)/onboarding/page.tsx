@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { CategoryCard } from '@/components/onboarding/CategoryCard';
 import { Category } from '@/lib/types';
+import { createClient } from '@/lib/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
+import { Loader2 } from 'lucide-react';
 
 const CATEGORIES: Category[] = [
     'Business', 'Startup', 'Finance', 'AI',
@@ -13,20 +16,14 @@ const CATEGORIES: Category[] = [
 
 export default function OnboardingPage() {
     const router = useRouter();
+    const { toast } = useToast();
     const [selected, setSelected] = useState<Category[]>([]);
     const [mounted, setMounted] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const supabase = createClient();
 
     useEffect(() => {
         setMounted(true);
-        // Load from local storage if exists
-        const saved = localStorage.getItem('framgen_categories');
-        if (saved) {
-            try {
-                setSelected(JSON.parse(saved));
-            } catch (e) {
-                console.error("Failed to parse saved categories");
-            }
-        }
     }, []);
 
     const toggleCategory = (cat: Category) => {
@@ -39,10 +36,36 @@ export default function OnboardingPage() {
         }
     };
 
-    const handleContinue = () => {
-        localStorage.setItem('framgen_categories', JSON.stringify(selected));
-        localStorage.setItem('framgen_onboarded', 'true');
-        router.push('/dashboard');
+    const handleContinue = async () => {
+        setLoading(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (!user) {
+                toast({ title: "Session expired", description: "Please login again", variant: "destructive" });
+                router.push('/login');
+                return;
+            }
+
+            const { error } = await supabase
+                .from('profiles')
+                .update({
+                    selected_categories: selected,
+                    has_onboarded: true,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', user.id);
+
+            if (error) throw error;
+
+            router.push('/dashboard');
+            router.refresh(); // Refresh to update server components checking auth/profile
+        } catch (error) {
+            console.error('Onboarding error:', error);
+            toast({ title: "Error saving preferences", description: "Please try again", variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (!mounted) return null;
@@ -84,10 +107,11 @@ export default function OnboardingPage() {
                     <Button
                         size="lg"
                         className="w-full md:w-auto min-w-[240px] text-lg h-14 rounded-full shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:scale-105 transition-all duration-300"
-                        disabled={selected.length === 0}
+                        disabled={selected.length === 0 || loading}
                         onClick={handleContinue}
                     >
-                        Continue to Dashboard
+                        {loading ? <Loader2 className="animate-spin mr-2" /> : null}
+                        {loading ? "Saving..." : "Continue to Dashboard"}
                     </Button>
                 </div>
             </div>
