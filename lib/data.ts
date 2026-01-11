@@ -23,8 +23,9 @@ function inferCategory(text: string): Category {
     return 'Business';
 }
 
-export async function loadPosts(): Promise<Post[]> {
+export async function loadPosts(): Promise<{ posts: Post[], lastUpdated: string | null }> {
     const supabaseAdmin = createAdminClient();
+    let lastUpdated: string | null = null;
 
     // 1. Check Cache in Supabase
     try {
@@ -41,7 +42,7 @@ export async function loadPosts(): Promise<Post[]> {
 
             if (hoursDiff < CACHE_TTL_HOURS) {
                 console.log(`[Data] Serving cached posts (Age: ${hoursDiff.toFixed(2)}h)`);
-                return cacheHit.posts as Post[];
+                return { posts: cacheHit.posts as Post[], lastUpdated };
             } else {
                 console.log(`[Data] Cache stale (Age: ${hoursDiff.toFixed(2)}h). Refreshing...`);
             }
@@ -134,5 +135,5 @@ export async function loadPosts(): Promise<Post[]> {
         }
     }
 
-    return sortedPosts;
+    return { posts: sortedPosts, lastUpdated };
 }
