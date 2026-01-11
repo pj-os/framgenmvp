@@ -132,16 +132,17 @@ export default function Dashboard() {
             <div className="max-w-[1600px] mx-auto space-y-8">
                 <header className="space-y-4 md:space-y-2">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                        <div className="flex items-center gap-2">
-                            <h1 className="text-3xl font-bold tracking-tight">Trending Now</h1>
-                            <RefreshButton />
+                        <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-3xl font-bold tracking-tight">Trending Now</h1>
+                                <RefreshButton />
+                            </div>
+                            {lastUpdated && (
+                                <p className="text-xs text-muted-foreground w-full">
+                                    Last updated: {new Date(lastUpdated).toLocaleString()}
+                                </p>
+                            )}
                         </div>
-                        {lastUpdated && (
-                            <p className="text-xs text-muted-foreground w-full">
-                                Last updated: {new Date(lastUpdated).toLocaleString()}
-                            </p>
-                        )}
-                    </div>
 
                         <div className="flex items-center gap-4">
                             <DropdownMenu>
