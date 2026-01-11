@@ -15,6 +15,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { createClient } from '@/lib/supabase/client';
 
 
 interface DashboardProps {
@@ -32,31 +33,42 @@ export default function Dashboard() {
 
     // Simple automated fetch since we are in Client Component
     useEffect(() => {
-        // 1. Get user preferences
-        const savedCats = localStorage.getItem('framgen_categories');
-        if (!savedCats) {
-            router.push('/onboarding');
-            return;
-        }
-        const categories: Category[] = JSON.parse(savedCats);
-        setUserCategories(categories);
+        const loadData = async () => {
+            const supabase = createClient();
 
-        // 2. Fetch posts (from an API route we need to create, or just filtering a server-passed prop? 
-        // Since we need to read the JSON file, we MUST use a Server Action or API Route.
-        // Let's assume we created /api/posts route or use a server action. 
-        // For simplicity, let's create a server action in a separate file or use fetch to an API.
-        // I will use fetch('/api/posts').
+            // 1. Get user profile for categories
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                router.push('/login');
+                return;
+            }
 
-        fetch('/api/posts')
-            .then(res => res.json())
-            .then((data: Post[]) => {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('selected_categories')
+                .eq('id', user.id)
+                .single();
+
+            if (!profile || !profile.selected_categories || profile.selected_categories.length === 0) {
+                router.push('/onboarding');
+                return;
+            }
+
+            setUserCategories(profile.selected_categories as Category[]);
+
+            // 2. Fetch posts
+            try {
+                const res = await fetch('/api/posts');
+                const data: Post[] = await res.json();
                 setPosts(data);
                 setLoading(false);
-            })
-            .catch(err => {
+            } catch (err) {
                 console.error(err);
                 setLoading(false);
-            });
+            }
+        };
+
+        loadData();
     }, [router]);
 
     useEffect(() => {
