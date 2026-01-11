@@ -74,7 +74,7 @@ export async function fetchXPosts(category: Category): Promise<Post[]> {
 
         const runInput = {
             "twitterContent": `${queryTerm} lang:en -filter:replies min_faves:5`,
-            "maxItems": 250,
+            "maxItems": 150,
             "queryType": "Latest",
         };
 
