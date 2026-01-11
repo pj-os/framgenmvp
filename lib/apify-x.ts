@@ -62,14 +62,30 @@ export async function fetchXPosts(category: Category): Promise<Post[]> {
 
         // Customize query terms for better results
         switch (category) {
-            case 'Business': queryTerm = '"Business Strategy" OR "Entrepreneurship"'; break;
-            case 'Startup': queryTerm = '"SaaS" OR "Startup" OR "Indie Hacker"'; break;
-            case 'Finance': queryTerm = '"Investing" OR "Stock Market" OR "Finance"'; break;
-            case 'AI': queryTerm = '"Artificial Intelligence" OR "LLM" OR "Generative AI"'; break;
-            case 'Software Development': queryTerm = '"Web Development" OR "Coding" OR "Software Engineering"'; break;
-            case 'Marketing': queryTerm = '"Digital Marketing" OR "Growth Hacking" OR "SEO"'; break;
-            case 'Design': queryTerm = '"UI/UX" OR "Web Design" OR "Graphic Design"'; break;
-            case 'Productivity': queryTerm = '"Productivity Hack" OR "Time Management"'; break;
+            case 'Business':
+                queryTerm = '"Business Strategy" OR "Entrepreneurship" OR "Business Growth" OR "Leadership" OR "Small Business" OR "Corporate"';
+                break;
+            case 'Startup':
+                queryTerm = '"SaaS" OR "Startup" OR "Indie Hacker" OR "Founder" OR "Bootstrapping" OR "Venture Capital" OR "Build in Public"';
+                break;
+            case 'Finance':
+                queryTerm = '"Investing" OR "Stock Market" OR "Finance" OR "Crypto" OR "Bitcoin" OR "Personal Finance" OR "Economics"';
+                break;
+            case 'AI':
+                queryTerm = '"Artificial Intelligence" OR "LLM" OR "Generative AI" OR "Machine Learning" OR "ChatGPT" OR "OpenAI" OR "Claude"';
+                break;
+            case 'Software Development':
+                queryTerm = '"Web Development" OR "Coding" OR "Software Engineering" OR "JavaScript" OR "TypeScript" OR "React" OR "Next.js"';
+                break;
+            case 'Marketing':
+                queryTerm = '"Digital Marketing" OR "Growth Hacking" OR "SEO" OR "Content Marketing" OR "Social Media Marketing" OR "Copywriting"';
+                break;
+            case 'Design':
+                queryTerm = '"UI/UX" OR "Web Design" OR "Graphic Design" OR "Product Design" OR "User Interface" OR "User Experience" OR "Figma"';
+                break;
+            case 'Productivity':
+                queryTerm = '"Productivity Hack" OR "Time Management" OR "Deep Work" OR "Focus" OR "Efficiency" OR "Self Improvement"';
+                break;
         }
 
         const runInput = {

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Filter } from 'lucide-react';
 import { RefreshButton } from '@/components/RefreshButton';
+import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -120,11 +121,7 @@ export default function Dashboard() {
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Loader2 className="animate-spin text-primary" size={32} />
-            </div>
-        );
+        return <LoadingScreen categories={userCategories} />;
     }
 
     return (
