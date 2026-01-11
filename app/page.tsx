@@ -7,13 +7,8 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check local storage for onboarding status
-    const onboardingComplete = localStorage.getItem('framgen_onboarded');
-    if (onboardingComplete) {
-      router.push('/dashboard');
-    } else {
-      router.push('/onboarding');
-    }
+    // Middleware handles auth protection for /dashboard
+    router.push('/dashboard');
   }, [router]);
 
   return (
