@@ -47,14 +47,16 @@ export default function OnboardingPage() {
                 return;
             }
 
+            // Upsert profile to handle cases where the trigger might have missed creating the profile
             const { error } = await supabase
                 .from('profiles')
-                .update({
+                .upsert({
+                    id: user.id,
+                    email: user.email,
                     selected_categories: selected,
                     has_onboarded: true,
                     updated_at: new Date().toISOString()
-                })
-                .eq('id', user.id);
+                });
 
             if (error) throw error;
 
